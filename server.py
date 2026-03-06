@@ -4,13 +4,25 @@ from datetime import date, datetime
 import sqlite3
 from pathlib import Path
 
-from flask import Flask, g, redirect, render_template, request, url_for, flash
+from flask import Flask, g, redirect, render_template, request, url_for, flash, session
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "inventory.db"
 
 app = Flask(__name__, template_folder="app/templates", static_folder="app/static")
-app.secret_key = "dev-secret-change-me"
+app.secret_key = os.getenv("SECRET_KEY", "dev-secret-change-me")
+APP_USERNAME = os.getenv("APP_USERNAME", "shopadmin")
+APP_PASSWORD = os.getenv("APP_PASSWORD", "shop12345")
+
+
+@app.before_request
+def require_login():
+    allowed = {"login", "static"}
+    if request.endpoint in allowed:
+        return
+    if session.get("logged_in"):
+        return
+    return redirect(url_for("login"))
 
 
 def get_db():
@@ -100,6 +112,28 @@ def parse_non_negative_float(value, field_name):
 @app.route("/")
 def index():
     return redirect(url_for("stock"))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        if username == APP_USERNAME and password == APP_PASSWORD:
+            session["logged_in"] = True
+            return redirect(url_for("stock"))
+
+        flash("Invalid username or password.", "error")
+
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("Logged out.", "success")
+    return redirect(url_for("login"))
 
 
 @app.route("/products", methods=["GET", "POST"])
