@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Current Stock</h2>
+<table>
+  <tr>
+    <th>Product</th>
+    <th>Category</th>
+    <th>Cost</th>
+    <th>Sale</th>
+    <th>Qty</th>
+    <th>Status</th>
+  </tr>
+  {% for item in items %}
+  <tr>
+    <td>{{ item.name }}</td>
+    <td>{{ item.category }}</td>
+    <td>{{ "%.2f"|format(item.cost_price) }}</td>
+    <td>{{ "%.2f"|format(item.sale_price) }}</td>
+    <td>{{ item.quantity }}</td>
+    <td>
+      {% if item.quantity <= item.low_stock_limit %}
+        <span class="low">Low Stock</span>
+      {% else %}
+        <span class="ok">OK</span>
+      {% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6">No products available.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

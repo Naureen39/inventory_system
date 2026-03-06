@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Daily Summary</h2>
+<form method="get" class="card inline-form">
+  <label>Date <input type="date" name="date" value="{{ selected_date }}"></label>
+  <button type="submit">View</button>
+</form>
+
+<div class="totals">
+  <div class="card"><strong>Total Sales</strong><br>{{ "%.2f"|format(totals.total_sales) }}</div>
+  <div class="card"><strong>Total Cost</strong><br>{{ "%.2f"|format(totals.total_cost) }}</div>
+  <div class="card"><strong>Total Profit</strong><br>{{ "%.2f"|format(totals.total_profit) }}</div>
+</div>
+
+<h3>Sales Records</h3>
+<table>
+  <tr>
+    <th>Product</th>
+    <th>Qty</th>
+    <th>Sale Total</th>
+    <th>Cost Total</th>
+    <th>Profit</th>
+  </tr>
+  {% for row in day_sales %}
+  <tr>
+    <td>{{ row.name }}</td>
+    <td>{{ row.qty }}</td>
+    <td>{{ "%.2f"|format(row.sale_total) }}</td>
+    <td>{{ "%.2f"|format(row.cost_total) }}</td>
+    <td>{{ "%.2f"|format(row.profit) }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5">No sales on this date.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

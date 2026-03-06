@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory MVP</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <header>
+    <h1>Stationery Inventory</h1>
+    <nav>
+      <a href="{{ url_for('stock') }}">Stock</a>
+      <a href="{{ url_for('products') }}">Products</a>
+      <a href="{{ url_for('purchase') }}">Purchases</a>
+      <a href="{{ url_for('sale') }}">Sales</a>
+      <a href="{{ url_for('summary') }}">Daily Summary</a>
+    </nav>
+  </header>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="flash {{ category }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

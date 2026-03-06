@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Add Product</h2>
+<form method="post" class="card form-grid">
+  <label>Name <input name="name" required></label>
+  <label>Category <input name="category"></label>
+  <label>Cost Price <input name="cost_price" type="number" min="0" step="0.01" required></label>
+  <label>Sale Price <input name="sale_price" type="number" min="0" step="0.01" required></label>
+  <label>Starting Qty <input name="quantity" type="number" min="1" step="1" required></label>
+  <label>Low Stock Limit <input name="low_stock_limit" type="number" min="1" step="1" value="5" required></label>
+  <button type="submit">Add</button>
+</form>
+
+<h2>Products</h2>
+<table>
+  <tr>
+    <th>Name</th>
+    <th>Category</th>
+    <th>Cost</th>
+    <th>Sale</th>
+    <th>Qty</th>
+    <th>Low Limit</th>
+  </tr>
+  {% for item in items %}
+  <tr>
+    <td>{{ item.name }}</td>
+    <td>{{ item.category }}</td>
+    <td>{{ "%.2f"|format(item.cost_price) }}</td>
+    <td>{{ "%.2f"|format(item.sale_price) }}</td>
+    <td>{{ item.quantity }}</td>
+    <td>{{ item.low_stock_limit }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6">No products added yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}
