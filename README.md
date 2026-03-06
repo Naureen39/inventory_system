@@ -31,6 +31,46 @@ python server.py
 - Database is SQLite (`inventory.db`) and auto-created on first run.
 - This is intentionally minimal and designed for easy extension.
 
+## Data Safety and Backup
+### 1) Secure credentials
+In your PythonAnywhere WSGI file, set:
+```python
+os.environ["APP_USERNAME"] = "your-username"
+os.environ["APP_PASSWORD"] = "your-password"
+os.environ["SECRET_KEY"] = "a-long-random-secret"
+```
+
+### 2) Lock database file permissions
+Run in PythonAnywhere Bash:
+```bash
+cd /home/<your-username>/inventory_system
+chmod 600 inventory.db
+```
+
+### 3) Create a safe backup
+```bash
+cd /home/<your-username>/inventory_system
+./scripts/backup_db.sh
+```
+
+### 4) Verify backup works (important)
+```bash
+sqlite3 backups/<backup-file-name>.db ".tables"
+```
+If tables are listed (`products`, `purchases`, `sales`), backup is valid.
+
+### 5) Schedule daily backup on PythonAnywhere
+- Go to `Tasks` tab -> add a daily task:
+```bash
+cd /home/<your-username>/inventory_system && ./scripts/backup_db.sh
+```
+
+### 6) Restore if needed
+```bash
+cp /home/<your-username>/inventory_system/backups/<backup-file-name>.db /home/<your-username>/inventory_system/inventory.db
+```
+Then reload web app.
+
 ## Deploy on PythonAnywhere (Free)
 1. Push project to GitHub.
 2. In PythonAnywhere, open a `Bash` console and clone your repo:

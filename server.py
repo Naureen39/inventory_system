@@ -1,6 +1,6 @@
 import argparse
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import sqlite3
 from pathlib import Path
 
@@ -13,6 +13,12 @@ app = Flask(__name__, template_folder="app/templates", static_folder="app/static
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-change-me")
 APP_USERNAME = os.getenv("APP_USERNAME", "shopadmin")
 APP_PASSWORD = os.getenv("APP_PASSWORD", "shop12345")
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=True,
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=12),
+)
 
 
 @app.before_request
@@ -27,8 +33,12 @@ def require_login():
 
 def get_db():
     if "db" not in g:
-        g.db = sqlite3.connect(DB_PATH)
+        g.db = sqlite3.connect(DB_PATH, timeout=10)
         g.db.row_factory = sqlite3.Row
+        g.db.execute("PRAGMA foreign_keys = ON")
+        g.db.execute("PRAGMA busy_timeout = 5000")
+        g.db.execute("PRAGMA journal_mode = WAL")
+        g.db.execute("PRAGMA synchronous = FULL")
     return g.db
 
 
@@ -42,6 +52,9 @@ def close_db(exception):
 def init_db():
     db = sqlite3.connect(DB_PATH)
     cursor = db.cursor()
+    cursor.execute("PRAGMA foreign_keys = ON")
+    cursor.execute("PRAGMA journal_mode = WAL")
+    cursor.execute("PRAGMA synchronous = FULL")
 
     cursor.execute(
         """
@@ -122,6 +135,7 @@ def login():
 
         if username == APP_USERNAME and password == APP_PASSWORD:
             session["logged_in"] = True
+            session.permanent = True
             return redirect(url_for("stock"))
 
         flash("Invalid username or password.", "error")
