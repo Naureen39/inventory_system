@@ -1,5 +1,6 @@
 import argparse
 import os
+import secrets
 from datetime import date, datetime, timedelta
 import sqlite3
 from pathlib import Path
@@ -10,9 +11,10 @@ BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "inventory.db"
 
 app = Flask(__name__, template_folder="app/templates", static_folder="app/static")
-app.secret_key = os.getenv("SECRET_KEY", "dev-secret-change-me")
-APP_USERNAME = os.getenv("APP_USERNAME", "shopadmin")
-APP_PASSWORD = os.getenv("APP_PASSWORD", "shop12345")
+app.secret_key = os.getenv("SECRET_KEY") or secrets.token_urlsafe(48)
+APP_USERNAME = os.getenv("APP_USERNAME")
+APP_PASSWORD = os.getenv("APP_PASSWORD")
+AUTH_CONFIGURED = bool(APP_USERNAME and APP_PASSWORD)
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
@@ -129,6 +131,10 @@ def index():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    if not AUTH_CONFIGURED:
+        flash("Login is not configured. Set APP_USERNAME and APP_PASSWORD on server.", "error")
+        return render_template("login.html"), 503
+
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")

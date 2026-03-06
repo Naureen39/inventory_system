@@ -44,6 +44,7 @@ os.environ["APP_USERNAME"] = "your-username"
 os.environ["APP_PASSWORD"] = "your-password"
 os.environ["SECRET_KEY"] = "a-long-random-secret"
 ```
+Important: do not commit real credentials into GitHub. Keep them only in server environment settings.
 
 ### 2) Lock database file permissions
 Run in PythonAnywhere Bash:
