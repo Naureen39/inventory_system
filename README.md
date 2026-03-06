@@ -6,6 +6,11 @@ A simple inventory management system for a small stationery shop.
 - Add products with cost, sale price, quantity, low-stock limit
 - Record purchases (increases stock)
 - Record sales (decreases stock)
+- Delete sale record (restores stock)
+- Delete purchase record (reverts stock if available)
+- Edit product details (name, prices, quantity, low-stock limit)
+- Edit purchase qty/cost (auto-adjusts stock)
+- Edit sale qty/price (auto-adjusts stock)
 - Prevent sales when stock is insufficient
 - Daily summary with total sales, total cost, and total profit
 - Stock page with low-stock indicator
@@ -70,6 +75,13 @@ cd /home/<your-username>/inventory_system && ./scripts/backup_db.sh
 cp /home/<your-username>/inventory_system/backups/<backup-file-name>.db /home/<your-username>/inventory_system/inventory.db
 ```
 Then reload web app.
+
+## Delete Logic Notes
+- Deleting a `sale` adds sold quantity back to stock.
+- Deleting a `purchase` removes purchased quantity from stock.
+- Purchase deletion is blocked if it would make stock negative.
+- Product deletion is allowed only when there is no purchase/sale history.
+- Editing purchase/sale does not change product selection; delete and recreate if wrong product was picked.
 
 ## Deploy on PythonAnywhere (Free)
 1. Push project to GitHub.

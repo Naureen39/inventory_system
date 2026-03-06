@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .venv/
 backups/
+inventory.db
+inventory.db-shm
+inventory.db-wal

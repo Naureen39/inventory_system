@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Edit Sale</h2>
+<p class="note">Product cannot be changed here. If wrong product was selected, delete this record and add a new one.</p>
+<form method="post" class="card form-grid">
+  <label>Product <input value="{{ row.name }}" disabled></label>
+  <label>Quantity <input name="qty" type="number" min="1" step="1" value="{{ row.qty }}" required></label>
+  <label>Unit Sale Price <input name="unit_sale" type="number" min="0" step="0.01" value="{{ row.unit_sale }}" required></label>
+  <button type="submit">Save Changes</button>
+</form>
+{% endblock %}

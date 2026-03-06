@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Record Sale</h2>
+<h2 class="page-title">Sales</h2>
+<h3>Record Sale</h3>
 <form method="post" class="card form-grid">
   <label>Product
     <select name="product_id" required>
@@ -15,9 +16,10 @@
   <button type="submit">Save Sale</button>
 </form>
 
-<h2>Recent Sales</h2>
+<h3>Recent Sales</h3>
+<div class="table-wrap">
 <table>
-  <tr><th>Product</th><th>Qty</th><th>Sale Price</th><th>Cost Price</th><th>Date/Time</th></tr>
+  <tr><th>Product</th><th>Qty</th><th>Sale Price</th><th>Cost Price</th><th>Date/Time</th><th>Action</th></tr>
   {% for row in latest %}
   <tr>
     <td>{{ row.name }}</td>
@@ -25,9 +27,18 @@
     <td>{{ "%.2f"|format(row.unit_sale) }}</td>
     <td>{{ "%.2f"|format(row.unit_cost_snapshot) }}</td>
     <td>{{ row.sold_at[:16].replace('T', ' ') }}</td>
+    <td>
+      <div class="actions">
+        <a class="btn-link" href="{{ url_for('edit_sale', sale_id=row.id) }}">Edit</a>
+        <form method="post" action="{{ url_for('delete_sale', sale_id=row.id) }}" onsubmit="return confirm('Delete this sale and restore stock?');">
+          <button type="submit" class="danger">Delete</button>
+        </form>
+      </div>
+    </td>
   </tr>
   {% else %}
-  <tr><td colspan="5">No sales yet.</td></tr>
+  <tr><td colspan="6">No sales yet.</td></tr>
   {% endfor %}
 </table>
+</div>
 {% endblock %}

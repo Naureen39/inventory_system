@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Daily Summary</h2>
+<h2 class="page-title">Daily Summary</h2>
 <form method="get" class="card inline-form">
   <label>Date <input type="date" name="date" value="{{ selected_date }}"></label>
   <button type="submit">View</button>
@@ -13,6 +13,7 @@
 </div>
 
 <h3>Sales Records</h3>
+<div class="table-wrap">
 <table>
   <tr>
     <th>Product</th>
@@ -33,4 +34,5 @@
   <tr><td colspan="5">No sales on this date.</td></tr>
   {% endfor %}
 </table>
+</div>
 {% endblock %}

@@ -3,12 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Inventory MVP</title>
+  <title>Login - AM Academy Inventory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
-<body>
-  <main>
-    <h2>Inventory Login</h2>
+<body class="login-body">
+  <main class="login-main">
+    <h2>AM Academy Inventory</h2>
+    <p class="login-subtitle">Secure sign-in for record management</p>
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, msg in messages %}
@@ -17,7 +21,7 @@
       {% endif %}
     {% endwith %}
 
-    <form method="post" class="card" style="max-width: 360px;">
+    <form method="post" class="card login-card">
       <label>Username <input name="username" required></label>
       <label>Password <input name="password" type="password" required></label>
       <button type="submit">Login</button>

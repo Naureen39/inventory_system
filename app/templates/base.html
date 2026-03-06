@@ -3,23 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Inventory MVP</title>
+  <title>AM Academy Inventory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-  <header>
-    <h1>Stationery Inventory</h1>
-    <nav>
-      <a href="{{ url_for('stock') }}">Stock</a>
-      <a href="{{ url_for('products') }}">Products</a>
-      <a href="{{ url_for('purchase') }}">Purchases</a>
-      <a href="{{ url_for('sale') }}">Sales</a>
-      <a href="{{ url_for('summary') }}">Daily Summary</a>
-      <a href="{{ url_for('logout') }}">Logout</a>
+  <header class="app-header">
+    <div class="brand-wrap">
+      <h1>AM Academy</h1>
+      <p>Inventory Control Desk</p>
+    </div>
+    <nav class="main-nav">
+      <a class="{% if request.endpoint == 'stock' %}active{% endif %}" href="{{ url_for('stock') }}">Stock</a>
+      <a class="{% if request.endpoint in ['products', 'edit_product'] %}active{% endif %}" href="{{ url_for('products') }}">Products</a>
+      <a class="{% if request.endpoint in ['purchase', 'edit_purchase'] %}active{% endif %}" href="{{ url_for('purchase') }}">Purchases</a>
+      <a class="{% if request.endpoint in ['sale', 'edit_sale'] %}active{% endif %}" href="{{ url_for('sale') }}">Sales</a>
+      <a class="{% if request.endpoint == 'summary' %}active{% endif %}" href="{{ url_for('summary') }}">Daily Summary</a>
+      <a class="logout-link" href="{{ url_for('logout') }}">Logout</a>
     </nav>
   </header>
 
-  <main>
+  <main class="app-main">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, msg in messages %}

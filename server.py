@@ -185,6 +185,67 @@ def products():
     return render_template("products.html", items=items)
 
 
+@app.post("/products/<int:product_id>/delete")
+def delete_product(product_id):
+    db = get_db()
+    product = db.execute("SELECT id, name FROM products WHERE id = ?", (product_id,)).fetchone()
+    if not product:
+        flash("Product not found.", "error")
+        return redirect(url_for("products"))
+
+    has_purchase = db.execute("SELECT 1 FROM purchases WHERE product_id = ? LIMIT 1", (product_id,)).fetchone()
+    has_sale = db.execute("SELECT 1 FROM sales WHERE product_id = ? LIMIT 1", (product_id,)).fetchone()
+    if has_purchase or has_sale:
+        flash("Cannot delete product with purchase/sale history.", "error")
+        return redirect(url_for("products"))
+
+    db.execute("DELETE FROM products WHERE id = ?", (product_id,))
+    db.commit()
+    flash("Product deleted.", "success")
+    return redirect(url_for("products"))
+
+
+@app.route("/products/<int:product_id>/edit", methods=["GET", "POST"])
+def edit_product(product_id):
+    db = get_db()
+    product = db.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
+    if not product:
+        flash("Product not found.", "error")
+        return redirect(url_for("products"))
+
+    if request.method == "POST":
+        try:
+            name = request.form.get("name", "").strip()
+            category = request.form.get("category", "").strip()
+            cost_price = parse_non_negative_float(request.form.get("cost_price"), "Cost price")
+            sale_price = parse_non_negative_float(request.form.get("sale_price"), "Sale price")
+            quantity = int(request.form.get("quantity", "0"))
+            low_stock_limit = parse_positive_int(request.form.get("low_stock_limit"), "Low stock limit")
+
+            if quantity < 0:
+                raise ValueError("Quantity cannot be negative.")
+            if not name:
+                raise ValueError("Product name is required.")
+
+            db.execute(
+                """
+                UPDATE products
+                SET name = ?, category = ?, cost_price = ?, sale_price = ?, quantity = ?, low_stock_limit = ?
+                WHERE id = ?
+                """,
+                (name, category, cost_price, sale_price, quantity, low_stock_limit, product_id),
+            )
+            db.commit()
+            flash("Product updated.", "success")
+            return redirect(url_for("products"))
+        except sqlite3.IntegrityError:
+            flash("Product name already exists.", "error")
+        except ValueError as exc:
+            flash(str(exc), "error")
+
+    return render_template("edit_product.html", product=product)
+
+
 @app.route("/purchase", methods=["GET", "POST"])
 def purchase():
     db = get_db()
@@ -223,7 +284,7 @@ def purchase():
     products_list = db.execute("SELECT id, name FROM products ORDER BY name").fetchall()
     latest = db.execute(
         """
-        SELECT p.name, pu.qty, pu.unit_cost, pu.purchased_at
+        SELECT pu.id, p.name, pu.qty, pu.unit_cost, pu.purchased_at
         FROM purchases pu
         JOIN products p ON p.id = pu.product_id
         ORDER BY pu.id DESC
@@ -231,6 +292,76 @@ def purchase():
         """
     ).fetchall()
     return render_template("purchase.html", products=products_list, latest=latest)
+
+
+@app.post("/purchase/<int:purchase_id>/delete")
+def delete_purchase(purchase_id):
+    db = get_db()
+    row = db.execute(
+        """
+        SELECT pu.id, pu.product_id, pu.qty, p.name, p.quantity
+        FROM purchases pu
+        JOIN products p ON p.id = pu.product_id
+        WHERE pu.id = ?
+        """,
+        (purchase_id,),
+    ).fetchone()
+
+    if not row:
+        flash("Purchase record not found.", "error")
+        return redirect(url_for("purchase"))
+
+    new_qty = row["quantity"] - row["qty"]
+    if new_qty < 0:
+        flash("Cannot delete purchase now because stock is already consumed.", "error")
+        return redirect(url_for("purchase"))
+
+    db.execute("UPDATE products SET quantity = ? WHERE id = ?", (new_qty, row["product_id"]))
+    db.execute("DELETE FROM purchases WHERE id = ?", (purchase_id,))
+    db.commit()
+    flash("Purchase deleted and stock reverted.", "success")
+    return redirect(url_for("purchase"))
+
+
+@app.route("/purchase/<int:purchase_id>/edit", methods=["GET", "POST"])
+def edit_purchase(purchase_id):
+    db = get_db()
+    row = db.execute(
+        """
+        SELECT pu.id, pu.product_id, pu.qty, pu.unit_cost, p.name, p.quantity
+        FROM purchases pu
+        JOIN products p ON p.id = pu.product_id
+        WHERE pu.id = ?
+        """,
+        (purchase_id,),
+    ).fetchone()
+    if not row:
+        flash("Purchase record not found.", "error")
+        return redirect(url_for("purchase"))
+
+    if request.method == "POST":
+        try:
+            new_qty = parse_positive_int(request.form.get("qty"), "Quantity")
+            new_unit_cost = parse_non_negative_float(request.form.get("unit_cost"), "Unit cost")
+
+            # Adjust stock by delta between new and old purchase qty.
+            delta = new_qty - row["qty"]
+            updated_stock = row["quantity"] + delta
+            if updated_stock < 0:
+                raise ValueError("Cannot reduce purchase qty because stock is already consumed.")
+
+            db.execute(
+                "UPDATE purchases SET qty = ?, unit_cost = ? WHERE id = ?",
+                (new_qty, new_unit_cost, purchase_id),
+            )
+            db.execute("UPDATE products SET quantity = ? WHERE id = ?", (updated_stock, row["product_id"]))
+            db.commit()
+            flash("Purchase updated and stock adjusted.", "success")
+            return redirect(url_for("purchase"))
+        except ValueError as exc:
+            flash(str(exc), "error")
+
+    return render_template("edit_purchase.html", row=row)
 
 
 @app.route("/sale", methods=["GET", "POST"])
@@ -268,7 +399,7 @@ def sale():
     products_list = db.execute("SELECT id, name, sale_price, quantity FROM products ORDER BY name").fetchall()
     latest = db.execute(
         """
-        SELECT p.name, s.qty, s.unit_sale, s.unit_cost_snapshot, s.sold_at
+        SELECT s.id, s.product_id, p.name, s.qty, s.unit_sale, s.unit_cost_snapshot, s.sold_at
         FROM sales s
         JOIN products p ON p.id = s.product_id
         ORDER BY s.id DESC
@@ -276,6 +407,71 @@ def sale():
         """
     ).fetchall()
     return render_template("sale.html", products=products_list, latest=latest)
+
+
+@app.post("/sale/<int:sale_id>/delete")
+def delete_sale(sale_id):
+    db = get_db()
+    row = db.execute(
+        """
+        SELECT s.id, s.product_id, s.qty, p.quantity
+        FROM sales s
+        JOIN products p ON p.id = s.product_id
+        WHERE s.id = ?
+        """,
+        (sale_id,),
+    ).fetchone()
+
+    if not row:
+        flash("Sale record not found.", "error")
+        return redirect(url_for("sale"))
+
+    new_qty = row["quantity"] + row["qty"]
+    db.execute("UPDATE products SET quantity = ? WHERE id = ?", (new_qty, row["product_id"]))
+    db.execute("DELETE FROM sales WHERE id = ?", (sale_id,))
+    db.commit()
+    flash("Sale deleted and stock reverted.", "success")
+    return redirect(url_for("sale"))
+
+
+@app.route("/sale/<int:sale_id>/edit", methods=["GET", "POST"])
+def edit_sale(sale_id):
+    db = get_db()
+    row = db.execute(
+        """
+        SELECT s.id, s.product_id, s.qty, s.unit_sale, p.name, p.quantity
+        FROM sales s
+        JOIN products p ON p.id = s.product_id
+        WHERE s.id = ?
+        """,
+        (sale_id,),
+    ).fetchone()
+    if not row:
+        flash("Sale record not found.", "error")
+        return redirect(url_for("sale"))
+
+    if request.method == "POST":
+        try:
+            new_qty = parse_positive_int(request.form.get("qty"), "Quantity")
+            new_unit_sale = parse_non_negative_float(request.form.get("unit_sale"), "Unit sale price")
+
+            # Stock after replacing old qty with new qty.
+            updated_stock = row["quantity"] + row["qty"] - new_qty
+            if updated_stock < 0:
+                raise ValueError("Not enough stock for updated sale quantity.")
+
+            db.execute(
+                "UPDATE sales SET qty = ?, unit_sale = ? WHERE id = ?",
+                (new_qty, new_unit_sale, sale_id),
+            )
+            db.execute("UPDATE products SET quantity = ? WHERE id = ?", (updated_stock, row["product_id"]))
+            db.commit()
+            flash("Sale updated and stock adjusted.", "success")
+            return redirect(url_for("sale"))
+        except ValueError as exc:
+            flash(str(exc), "error")
+
+    return render_template("edit_sale.html", row=row)
 
 
 @app.route("/stock")
